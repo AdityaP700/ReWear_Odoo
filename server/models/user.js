@@ -11,6 +11,10 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
   User.hasMany(models.Item, { foreignKey: 'userId' });
+  // A user can make many swap requests
+  User.hasMany(models.Swap, { as: 'MadeSwaps', foreignKey: 'requester_id' });
+  // A user can receive many swap requests
+  User.hasMany(models.Swap, { as: 'ReceivedSwaps', foreignKey: 'responder_id' });
 }
   }
   User.init({

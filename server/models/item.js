@@ -11,6 +11,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
   Item.belongsTo(models.User, { foreignKey: 'userId' });
+  // An item can be requested in many swaps
+  Item.hasMany(models.Swap, { as: 'RequestedInSwaps', foreignKey: 'requested_item_id' });
 }
   }
   Item.init({
