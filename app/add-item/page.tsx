@@ -20,10 +20,10 @@ export default function AddItemPage() {
   });
 
   const previousListings = [
-    { id: 1, name: "Vintage Jacket", image: "/placeholder.svg?height=120&width=120", status: "Swapped" },
-    { id: 2, name: "Summer Dress", image: "/placeholder.svg?height=120&width=120", status: "Available" },
-    { id: 3, name: "Wool Sweater", image: "/placeholder.svg?height=120&width=120", status: "Pending" },
-    { id: 4, name: "Leather Boots", image: "/placeholder.svg?height=120&width=120", status: "Available" },
+    { id: 1, name: "Vintage Jacket", images: "/placeholder.svg?height=120&width=120", status: "Swapped" },
+    { id: 2, name: "Summer Dress", images: "/placeholder.svg?height=120&width=120", status: "Available" },
+    { id: 3, name: "Wool Sweater", images: "/placeholder.svg?height=120&width=120", status: "Pending" },
+    { id: 4, name: "Leather Boots", images: "/placeholder.svg?height=120&width=120", status: "Available" },
   ];
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -326,7 +326,8 @@ export default function AddItemPage() {
                   href={`/item/${item.id}`}
                   className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
                 >
-                  <img src={item.image || "/placeholder.svg"} alt={item.name} className="w-full h-32 object-cover" />
+                  <img
+    src={`${process.env.NEXT_PUBLIC_API_URL}${item.images?.[0]}`} alt={item.name} className="w-full h-32 object-cover" />
                   <div className="p-4">
                     <h3 className="font-medium text-white mb-2">{item.name}</h3>
                     <span

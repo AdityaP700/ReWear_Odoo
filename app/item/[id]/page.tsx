@@ -159,8 +159,7 @@ export default function ItemDetailPage() {
           <div>
             <div className="bg-light rounded-2xl p-4 mb-6">
               <img
-  // Check if the images array exists and has at least one image
-  src={item.images && item.images[0] ? item.images[0] : "/placeholder.svg?height=400&width=400"}
+    src={`${process.env.NEXT_PUBLIC_API_URL}${item.images?.[0]}`}
                 alt={item.title}
                 className="w-full h-96 object-cover rounded-lg"
               />

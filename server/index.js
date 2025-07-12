@@ -1,22 +1,46 @@
-// index.js - THE CORRECT AND COMPLETE FILE (v2)
+// index.js - THE FINAL, PRODUCTION-READY VERSION
+
+// --- Setup and Imports ---
 const express = require('express');
+const http = require('http');
+const { Server } = require("socket.io");
 const bodyParser = require('body-parser');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const { User, Item, Swap } = require('./models');
 require('dotenv').config();
 
+// --- Initialization ---
 const app = express();
+const server = http.createServer(app); // Create HTTP server FOR Express
+const io = new Server(server, { // Attach Socket.IO to the HTTP server
+  cors: {
+origin: ["http://localhost:3000", "http://localhost:3002","http://localhost:3001"],
+    methods: ["GET", "POST"]
+  }
+});
 const PORT = process.env.PORT || 3001;
 
-// === MIDDLEWARE ===
+// === Global Middleware ===
 app.use(cors());
 app.use(bodyParser.json());
+// Make the `io` instance available to all API routes
+app.set('io', io);
+// Serve uploaded images statically
 app.use('/uploads', express.static('uploads'));
-// === HELPER FUNCTIONS & MIDDLEWARE ===
+
+// === Socket.IO Connection Handler ===
+io.on('connection', (socket) => {
+  console.log(`✅ User connected with socket id: ${socket.id}`);
+  socket.on('disconnect', () => {
+    console.log('❌ User disconnected');
+  });
+});
+
+// === Helper Functions (Middlewares) ===
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -152,15 +176,46 @@ app.post('/api/swaps/request/:itemId', authenticateToken, async (req, res) => {
   try {
     const requestedItemId = req.params.itemId;
     const requesterId = req.user.id;
+
     const item = await Item.findByPk(requestedItemId);
-    if (!item || item.status !== 'Available') return res.status(404).json({ message: 'Item is not available for swap.' });
-    if (requesterId === item.userId) return res.status(400).json({ message: 'You cannot swap for your own item.' });
-    const existingSwap = await Swap.findOne({ where: { requested_item_id: requestedItemId, requester_id: requesterId } });
-    if (existingSwap) return res.status(400).json({ message: 'You have already requested to swap this item.' });
-    const newSwap = await Swap.create({
-      requester_id: requesterId, responder_id: item.userId, requested_item_id: requestedItemId, status: 'pending', type: 'swap'
+
+    if (!item || item.status !== 'Available') {
+      return res.status(404).json({ message: 'Item is not available for swap.' });
+    }
+
+    if (requesterId === item.userId) {
+      return res.status(400).json({ message: 'You cannot swap for your own item.' });
+    }
+
+    const existingSwap = await Swap.findOne({
+      where: {
+        requested_item_id: requestedItemId,
+        requester_id: requesterId,
+      }
     });
+
+    if (existingSwap) {
+      return res.status(400).json({ message: 'You have already requested to swap this item.' });
+    }
+
+    const newSwap = await Swap.create({
+      requester_id: requesterId,
+      responder_id: item.userId,
+      requested_item_id: requestedItemId,
+      status: 'pending',
+      type: 'swap',
+    });
+
+    // ✅ Emit Socket.IO event
+    const io = req.app.get('io');
+    io.emit('new_swap_request', {
+      responderId: item.userId,
+      itemId: requestedItemId,
+      requesterId: requesterId,
+    });
+
     res.status(201).json({ message: 'Swap request sent successfully!', swap: newSwap });
+
   } catch (error) {
     console.error('Swap request error:', error);
     res.status(500).json({ message: 'Failed to send swap request.' });
@@ -187,21 +242,46 @@ app.put('/api/swaps/respond/:swapId', authenticateToken, async (req, res) => {
   try {
     const { swapId } = req.params;
     const { action } = req.body;
-    const swap = await Swap.findOne({ where: { id: swapId, responder_id: req.user.id } });
-    if (!swap) return res.status(404).json({ message: 'Swap request not found.' });
+
+    const swap = await Swap.findOne({
+      where: {
+        id: swapId,
+        responder_id: req.user.id,
+      },
+    });
+
+    if (!swap) {
+      return res.status(404).json({ message: 'Swap request not found.' });
+    }
 
     if (action === 'accept') {
       swap.status = 'accepted';
       await swap.save();
-      await Item.update({ status: 'Swapped' }, { where: { id: swap.requested_item_id }});
-      res.status(200).json({ message: 'Swap accepted!', swap });
+
+      // Update the item status to 'Swapped'
+      await Item.update(
+        { status: 'Swapped' },
+        { where: { id: swap.requested_item_id } }
+      );
+
     } else if (action === 'reject') {
       swap.status = 'rejected';
       await swap.save();
-      res.status(200).json({ message: 'Swap rejected.', swap });
+
     } else {
-      res.status(400).json({ message: 'Invalid action.' });
+      return res.status(400).json({ message: 'Invalid action.' });
     }
+
+    // ✅ Emit update to requester
+    const requesterId = swap.requester_id;
+    const io = req.app.get('io');
+    io.emit('swap_status_update', { requesterId });
+
+    res.status(200).json({
+      message: `Swap ${action === 'accept' ? 'accepted' : 'rejected'}.`,
+      swap,
+    });
+
   } catch (error) {
     console.error('Error responding to swap:', error);
     res.status(500).json({ message: 'Failed to respond to swap request.' });
@@ -259,8 +339,37 @@ app.get('/api/admin/orders', [authenticateToken, requireAdmin], async (req, res)
     res.status(500).json({ message: 'Failed to fetch orders.' });
   }
 });
+app.put('/api/admin/items/:itemId', [authenticateToken, requireAdmin], async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const { status } = req.body; // Expecting { status: 'Available' } or { status: 'Rejected' }
 
-// === START SERVER ===
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+    // Add validation for the status
+    const validStatuses = ['Available', 'Rejected', 'Pending']; // Add any other statuses you might use
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'A valid status is required.' });
+    }
+
+    const [updateCount] = await Item.update({ status }, {
+      where: { id: itemId }
+    });
+
+    if (updateCount === 0) {
+      return res.status(404).json({ message: 'Item not found.' });
+    }
+    
+    // Log the admin action for your records
+    console.log(`[ADMIN ACTION] User ${req.user.username} updated Item ${itemId} to status: ${status}`);
+
+    res.status(200).json({ message: `Item has been successfully ${status}.` });
+
+  } catch (error) {
+    console.error('Admin item update error:', error);
+    res.status(500).json({ message: 'Failed to update item status.' });
+  }
+});
+// === START THE SERVER ===
+// This MUST be server.listen, not app.listen, to handle both HTTP and WebSockets
+server.listen(PORT, () => {
+  console.log(`✅✅✅ ReWear Server with Real-Time features is running on http://localhost:${PORT}`);
 });

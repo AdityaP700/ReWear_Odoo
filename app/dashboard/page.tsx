@@ -1,11 +1,12 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, User, Plus } from "lucide-react";
 import Link from "next/link";
+import io from 'socket.io-client';
+import toast from 'react-hot-toast';
 
-// Types
+// Corrected Types
 interface UserProfile {
   username: string;
   email: string;
@@ -17,7 +18,7 @@ interface ItemListing {
   id: number;
   name: string;
   title: string;
-  images: string;
+  images: string[]; // Corrected: images is an array
   status: string;
 }
 
@@ -25,7 +26,7 @@ interface SwapRequest {
   id: number;
   RequestedItem: {
     title: string;
-    images: string;
+    images: string[]; // Corrected: images is an array
   };
   Requester: {
     username: string;
@@ -40,62 +41,67 @@ export default function DashboardPage() {
   const [receivedSwaps, setReceivedSwaps] = useState<SwapRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
- // In app/dashboard/page.tsx - A better debugging version of useEffect
+  useEffect(() => {
+    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001');
 
-useEffect(() => {
-  const fetchDashboardData = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const headers = { Authorization: `Bearer ${token}` };
-
-      const [dashboardResponse, swapsResponse] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/dashboard`, { headers }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/swaps/received`, { headers }),
-      ]);
-
-      // --- Enhanced Debugging Block ---
-      // Check each response individually to find the culprit.
-      if (!dashboardResponse.ok) {
-        const errorText = await dashboardResponse.text();
-        console.error(`❌ /api/dashboard failed with status ${dashboardResponse.status}:`, errorText);
-        router.push("/login"); // Fail safely
+    const fetchDashboardData = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        router.push("/login");
         return;
       }
 
-      if (!swapsResponse.ok) {
-        const errorText = await swapsResponse.text();
-        console.error(`❌ /api/swaps/received failed with status ${swapsResponse.status}:`, errorText);
-        // We can still try to load the rest of the dashboard even if swaps fail.
-        // So we won't redirect, just log the error.
+      setIsLoading(true);
+
+      try {
+        const headers = { Authorization: `Bearer ${token}` };
+
+        const [dashboardResponse, swapsResponse] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/dashboard`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/swaps/received`, { headers }),
+        ]);
+
+        if (!dashboardResponse.ok) {
+          const errorText = await dashboardResponse.text();
+          console.error(`❌ /api/dashboard failed with status ${dashboardResponse.status}:`, errorText);
+          router.push("/login");
+          return;
+        }
+
+        if (!swapsResponse.ok) {
+          const errorText = await swapsResponse.text();
+          console.error(`❌ /api/swaps/received failed with status ${swapsResponse.status}:`, errorText);
+        }
+
+        const dashboardData = await dashboardResponse.json();
+        setUser(dashboardData.user);
+        setMyListings(dashboardData.listings);
+
+        if (swapsResponse.ok) {
+          const swapsData = await swapsResponse.json();
+          setReceivedSwaps(swapsData);
+        }
+
+      } catch (error) {
+        console.error("A network or Promise.all error occurred:", error);
+      } finally {
+        setIsLoading(false);
       }
-      // --- End of Debugging Block ---
+    };
 
-      const dashboardData = await dashboardResponse.json();
-      setUser(dashboardData.user);
-      setMyListings(dashboardData.listings);
+    fetchDashboardData();
 
-      // Only try to set swaps if the response was ok
-      if (swapsResponse.ok) {
-        const swapsData = await swapsResponse.json();
-        setReceivedSwaps(swapsData);
-      }
+    // Listen for real-time updates
+    socket.on('new_swap_request', () => {
+      toast.success("You have a new swap request!");
+      fetchDashboardData();
+    });
 
-    } catch (error) {
-      console.error("A network or Promise.all error occurred:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    return () => {
+      socket.disconnect();
+    };
+  }, [router]);
 
-  fetchDashboardData();
-}, [router]); // Dependency array is correct
   const handleSwapResponse = async (
     swapId: number,
     action: "accept" | "reject"
@@ -189,27 +195,6 @@ useEffect(() => {
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
-  <div className="text-center">
-    <p className="text-lg font-medium text-gray-900">
-      {myListings.length}
-    </p>
-    <p className="text-gray-500 text-sm">Listings</p>
-  </div>
-  <div className="text-center">
-    <p className="text-lg font-medium text-gray-900">
-      {user.points_balance}
-    </p>
-    <p className="text-gray-500 text-sm">Points</p>
-  </div>
-  {/* NEW -> Swap History Link */}
-  <Link href="/my-swaps" className="text-center">
-    <p className="text-lg font-medium text-gray-900">_</p>
-    <p className="text-gray-500 text-sm hover:text-green-600 transition-colors">
-      History
-    </p>
-  </Link>
-</div>
-<div className="flex items-center gap-4">
                   <div className="text-center">
                     <p className="text-lg font-medium text-gray-900">
                       {myListings.length}
@@ -222,6 +207,12 @@ useEffect(() => {
                     </p>
                     <p className="text-gray-500 text-sm">Points</p>
                   </div>
+                  <Link href="/my-swaps" className="text-center">
+                    <p className="text-lg font-medium text-gray-900">_</p>
+                    <p className="text-gray-500 text-sm hover:text-green-600 transition-colors">
+                      History
+                    </p>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -297,7 +288,7 @@ useEffect(() => {
                   className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
                 >
                   <img
-  src={item.images && item.images[0] ? item.images[0] : "/placeholder.svg?height=400&width=400"}
+                    src={item.images?.[0] || "/placeholder.svg"}
                     alt={item.title}
                     className="w-full h-40 object-cover rounded-t-lg"
                   />
