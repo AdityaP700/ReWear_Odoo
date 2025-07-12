@@ -109,3 +109,31 @@ app.post('/api/items/add', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Failed to add item' });
   }
 });
+app.get('/api/dashboard', authenticateToken, async (req, res) => {
+  try {
+    // 1. Fetch the user's profile info using the ID from the token
+    const user = await User.findByPk(req.user.id, {
+      // IMPORTANT: Exclude the password for security!
+      attributes: { exclude: ['password'] }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // 2. Fetch all items listed by this user
+    const listings = await Item.findAll({
+      where: {
+        userId: req.user.id
+      },
+      order: [['createdAt', 'DESC']] // Show the newest items first
+    });
+
+    // 3. Send all the data back in one convenient object
+    res.status(200).json({ user, listings });
+
+  } catch (error) {
+    console.error('Dashboard data fetch error:', error);
+    res.status(500).json({ message: 'Failed to fetch dashboard data' });
+  }
+});
