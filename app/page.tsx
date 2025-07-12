@@ -17,7 +17,7 @@ export default function LandingPage() {
 
   // Using more professional and relevant images for the carousel
   const carouselImages = [
-    "https://images.unsplash.com/photo-1555529771-835f59ee5020?w=1200&h=600&fit=crop&q=80",
+    "https://assets.vogue.com/photos/640a59132d97b176bf8ceef6/master/w_2560%2Cc_limit/00-story%2520(1).jpg",
     "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200&h=600&fit=crop&q=80",
     "https://images.unsplash.com/photo-1445205170230-053b83016050?w=1200&h=600&fit=crop&q=80",
   ];
