@@ -15,16 +15,23 @@ module.exports = (sequelize, DataTypes) => {
   Item.hasMany(models.Swap, { as: 'RequestedInSwaps', foreignKey: 'requested_item_id' });
 }
   }
-  Item.init({
-    title: DataTypes.STRING,
-    description: DataTypes.TEXT,
-    category: DataTypes.STRING,
-    status: DataTypes.STRING,
-    image: DataTypes.STRING,
+ Item.init({
+  title: DataTypes.STRING,
+  description: DataTypes.TEXT,
+  category: DataTypes.STRING,
+  status: DataTypes.STRING,
+  // Change `image` to `images` and update its type
+  images: DataTypes.ARRAY(DataTypes.STRING),
+  // Add the new fields
+  size: DataTypes.STRING,
+  condition: DataTypes.STRING,
+  brand: DataTypes.STRING,
+  color: DataTypes.STRING,
+  material: DataTypes.STRING,
     userId: DataTypes.INTEGER
   }, {
-    sequelize,
-    modelName: 'Item',
-  });
+      sequelize,
+      modelName: 'Item',
+    });
   return Item;
 };

@@ -1,24 +1,25 @@
-// index.js - THE CORRECT AND COMPLETE FILE
-
+// index.js - THE CORRECT AND COMPLETE FILE (v2)
 const express = require('express');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const cors = require('cors'); 
-const { User, Item, Swap } = require('./models'); // Sequelize model
+const cors = require('cors');
+const path = require('path');
+const multer = require('multer');
+const { User, Item, Swap } = require('./models');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // === MIDDLEWARE ===
-app.use(cors()); 
+app.use(cors());
 app.use(bodyParser.json());
-
-// === HELPER FUNCTIONS ===
+app.use('/uploads', express.static('uploads'));
+// === HELPER FUNCTIONS & MIDDLEWARE ===
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  const token = authHeader && authHeader.split(' ')[1];
   if (token == null) return res.sendStatus(401);
 
   jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err, user) => {
@@ -28,13 +29,28 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+const requireAdmin = (req, res, next) => {
+  if (req.user && req.user.is_admin) {
+    next();
+  } else {
+    res.status(403).json({ message: 'Forbidden: Admin access required.' });
+  }
+};
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: storage });
 
 // === API ROUTES ===
 
-// --- Test Route ---
-app.get('/', (req, res) => {
-  res.status(200).json({ message: 'Success! The ReWear backend is alive!' });
-});
+// --- Test & Public Routes ---
+app.get('/', (req, res) => res.status(200).json({ message: 'Success! The ReWear backend is alive!' }));
 
 // --- Auth Routes ---
 app.post('/api/auth/register', async (req, res) => {
@@ -68,8 +84,17 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-
 // --- Item Routes ---
+app.get('/api/items', async (req, res) => {
+  try {
+    const items = await Item.findAll({ where: { status: 'Available' }, order: [['createdAt', 'DESC']] });
+    res.status(200).json(items);
+  } catch (error) {
+    console.error('Error fetching all items:', error);
+    res.status(500).json({ message: 'Failed to fetch items.' });
+  }
+});
+
 app.get('/api/items/:id', async (req, res) => {
   try {
     const item = await Item.findByPk(req.params.id, { include: { model: User, attributes: ['id', 'username'] } });
@@ -83,9 +108,10 @@ app.get('/api/items/:id', async (req, res) => {
 
 app.post('/api/items/add', authenticateToken, async (req, res) => {
   try {
-    const { title, description, category } = req.body;
+    const { title, description, category, size, condition, brand, color, material } = req.body;
     const newItem = await Item.create({
-      title, description, category, status: 'Available', image: '/placeholder.svg', userId: req.user.id
+      title, description, category, size, condition, brand, color, material,
+      status: 'Available', images: [], userId: req.user.id
     });
     res.status(201).json(newItem);
   } catch (error) {
@@ -94,6 +120,19 @@ app.post('/api/items/add', authenticateToken, async (req, res) => {
   }
 });
 
+app.post('/api/items/:itemId/images', [authenticateToken, upload.array('images', 5)], async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const item = await Item.findOne({ where: { id: itemId, userId: req.user.id } });
+    if (!item) return res.status(404).json({ message: 'Item not found or you do not have permission to edit it.' });
+    const filepaths = req.files.map(file => `/uploads/${file.filename}`);
+    await item.update({ images: filepaths });
+    res.status(200).json({ message: 'Images uploaded successfully!', item });
+  } catch (error) {
+    console.error('Image upload error:', error);
+    res.status(500).json({ message: 'Failed to upload images.' });
+  }
+});
 
 // --- Dashboard Route ---
 app.get('/api/dashboard', authenticateToken, async (req, res) => {
@@ -107,7 +146,6 @@ app.get('/api/dashboard', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch dashboard data' });
   }
 });
-
 
 // --- Swap Routes ---
 app.post('/api/swaps/request/:itemId', authenticateToken, async (req, res) => {
@@ -129,7 +167,6 @@ app.post('/api/swaps/request/:itemId', authenticateToken, async (req, res) => {
   }
 });
 
-// THIS IS THE ROUTE THAT WAS MISSING
 app.get('/api/swaps/received', authenticateToken, async (req, res) => {
   try {
     const receivedSwaps = await Swap.findAll({
@@ -146,7 +183,6 @@ app.get('/api/swaps/received', authenticateToken, async (req, res) => {
   }
 });
 
-// THIS IS THE OTHER ROUTE THAT WAS MISSING
 app.put('/api/swaps/respond/:swapId', authenticateToken, async (req, res) => {
   try {
     const { swapId } = req.params;
@@ -172,18 +208,10 @@ app.put('/api/swaps/respond/:swapId', authenticateToken, async (req, res) => {
   }
 });
 
-
-// === START SERVER (ONCE, AT THE VERY END) ===
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
 app.get('/api/swaps/made', authenticateToken, async (req, res) => {
   try {
     const madeSwaps = await Swap.findAll({
-      where: {
-        requester_id: req.user.id // The logged-in user is the requester
-      },
-      // Include details about the item they requested
+      where: { requester_id: req.user.id },
       include: [{ model: Item, as: 'RequestedItem', attributes: ['id', 'title', 'image'] }],
       order: [['createdAt', 'DESC']]
     });
@@ -193,15 +221,46 @@ app.get('/api/swaps/made', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch your swap history.' });
   }
 });
-app.get('/api/items', async (req, res) => {
+
+// --- Admin Routes ---
+app.get('/api/admin/users', [authenticateToken, requireAdmin], async (req, res) => {
   try {
-    const items = await Item.findAll({
-      where: { status: 'Available' },
+    const users = await User.findAll({ attributes: { exclude: ['password'] } });
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch users.' });
+  }
+});
+
+app.get('/api/admin/listings', [authenticateToken, requireAdmin], async (req, res) => {
+  try {
+    const listings = await Item.findAll({
+      include: { model: User, attributes: ['username'] },
       order: [['createdAt', 'DESC']]
     });
-    res.status(200).json(items);
+    res.status(200).json(listings);
   } catch (error) {
-    console.error('Error fetching all items:', error);
-    res.status(500).json({ message: 'Failed to fetch items.' });
+    res.status(500).json({ message: 'Failed to fetch listings.' });
   }
+});
+
+app.get('/api/admin/orders', [authenticateToken, requireAdmin], async (req, res) => {
+  try {
+    const orders = await Swap.findAll({
+      include: [
+        { model: User, as: 'Requester', attributes: ['username'] },
+        { model: User, as: 'Responder', attributes: ['username'] },
+        { model: Item, as: 'RequestedItem', attributes: ['title'] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+    res.status(200).json(orders);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch orders.' });
+  }
+});
+
+// === START SERVER ===
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
