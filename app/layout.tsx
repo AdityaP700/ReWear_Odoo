@@ -107,7 +107,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             
             <div className="border-t border-gray-800 mt-12 pt-8 text-center">
               <p className="text-gray-400">
-                © 2024 ReWear. All rights reserved. Made with 💚 for a sustainable future.
+                © 2025 ReWear. All rights reserved. Made with 💚 for a sustainable future.
               </p>
             </div>
           </div>
