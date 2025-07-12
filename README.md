@@ -1,8 +1,4 @@
-Here is your **ready-to-paste `README.md`** file for the `ReWear` project, in clean, production-grade Markdown:
 
----
-
-````markdown
 # ReWear – A Community Clothing Exchange Platform
 
 ![ReWear Banner](https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&h=400&fit=crop&q=80)
@@ -165,18 +161,13 @@ MIT License. Open to contributions and forks.
 
 ---
 
-Made with 💚 by Team ReWear
+Made with 💚 
 
 ```
 
 ---
 
-### ✅ Instructions:
 
-- Replace `[Live Demo URL]` and `[Live API URL]` with your deployed Vercel/Render/Heroku links.
-- Replace `https://github.com/your-username/rewear-project.git` with your repo link.
-
-Let me know if you want:
 - Swagger API docs added
 - Screenshots in the README
 - Deployment steps for Vercel + Render
