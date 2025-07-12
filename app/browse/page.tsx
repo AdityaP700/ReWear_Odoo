@@ -16,7 +16,7 @@ const testimonials = [
     name: "Sarah Johnson",
     text: "ReWear has completely changed how I shop for clothes. I've found amazing pieces and made great friends!",
     rating: 5,
-    image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=60&h=60&fit=crop&crop=face",
+    image: "https://static.vecteezy.com/system/resources/previews/024/183/502/original/male-avatar-portrait-of-a-young-man-with-a-beard-illustration-of-male-character-in-modern-color-style-vector.jpg",
   },
   {
     name: "Michael Chen",
