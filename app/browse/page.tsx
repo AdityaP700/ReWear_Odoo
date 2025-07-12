@@ -17,7 +17,7 @@ import {
 interface BrowseItem {
   id: number;
   title: string;
-  image: string;
+  images: string;
 }
 
 // Static Testimonials
@@ -146,7 +146,7 @@ export default function BrowsePage() {
                   className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
                 >
                   <img
-                    src={item.image || "/placeholder.svg"}
+                    src={item.images || "/placeholder.svg"}
                     alt={item.title}
                     className="w-full h-48 object-cover rounded-t-lg"
                   />

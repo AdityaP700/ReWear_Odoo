@@ -11,11 +11,16 @@ interface ItemDetails {
   description: string;
   category: string;
   status: string;
-  image: string;
+  images: string;
   User: {
     id: number;
     username: string;
-  };
+  }; size: string;
+  condition: string;
+  brand: string;
+  color: string;
+  material: string;
+  
 }
 
 export default function ItemDetailPage() {
@@ -150,11 +155,12 @@ export default function ItemDetailPage() {
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          {/* Image */}
+          {/* Images */}
           <div>
             <div className="bg-light rounded-2xl p-4 mb-6">
               <img
-                src={item.image || "/placeholder.svg?height=400&width=400"}
+  // Check if the images array exists and has at least one image
+  src={item.images && item.images[0] ? item.images[0] : "/placeholder.svg?height=400&width=400"}
                 alt={item.title}
                 className="w-full h-96 object-cover rounded-lg"
               />

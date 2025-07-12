@@ -13,7 +13,7 @@ interface MadeSwap {
   RequestedItem: {
     id: number;
     title: string;
-    image: string;
+    images: string;
   };
   createdAt: string;
 }
@@ -77,7 +77,7 @@ export default function MySwapsPage() {
             swaps.map(swap => (
               <div key={swap.id} className="flex items-center justify-between border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
                 <div className="flex items-center gap-4">
-                  <img src={swap.RequestedItem.image || '/placeholder.svg'} alt={swap.RequestedItem.title} className="w-16 h-16 object-cover rounded-md" />
+                  <img src={swap.RequestedItem.images || '/placeholder.svg'} alt={swap.RequestedItem.title} className="w-16 h-16 object-cover rounded-md" />
                   <div>
                     <Link href={`/item/${swap.RequestedItem.id}`} className="font-semibold text-dark hover:text-primary transition-colors">{swap.RequestedItem.title}</Link>
                     <p className="text-sm text-gray-500">Requested on {new Date(swap.createdAt).toLocaleDateString()}</p>

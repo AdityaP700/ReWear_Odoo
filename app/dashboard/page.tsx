@@ -17,7 +17,7 @@ interface ItemListing {
   id: number;
   name: string;
   title: string;
-  image: string;
+  images: string;
   status: string;
 }
 
@@ -25,7 +25,7 @@ interface SwapRequest {
   id: number;
   RequestedItem: {
     title: string;
-    image: string;
+    images: string;
   };
   Requester: {
     username: string;
@@ -189,6 +189,27 @@ useEffect(() => {
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
+  <div className="text-center">
+    <p className="text-lg font-medium text-gray-900">
+      {myListings.length}
+    </p>
+    <p className="text-gray-500 text-sm">Listings</p>
+  </div>
+  <div className="text-center">
+    <p className="text-lg font-medium text-gray-900">
+      {user.points_balance}
+    </p>
+    <p className="text-gray-500 text-sm">Points</p>
+  </div>
+  {/* NEW -> Swap History Link */}
+  <Link href="/my-swaps" className="text-center">
+    <p className="text-lg font-medium text-gray-900">_</p>
+    <p className="text-gray-500 text-sm hover:text-green-600 transition-colors">
+      History
+    </p>
+  </Link>
+</div>
+<div className="flex items-center gap-4">
                   <div className="text-center">
                     <p className="text-lg font-medium text-gray-900">
                       {myListings.length}
@@ -276,7 +297,7 @@ useEffect(() => {
                   className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
                 >
                   <img
-                    src={item.image || "/placeholder.svg"}
+  src={item.images && item.images[0] ? item.images[0] : "/placeholder.svg?height=400&width=400"}
                     alt={item.title}
                     className="w-full h-40 object-cover rounded-t-lg"
                   />
