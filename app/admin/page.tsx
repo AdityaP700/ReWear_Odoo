@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, User, Package, ShoppingBag } from "lucide-react";
+import { Search, User, Package, ShoppingBag, CheckCircle, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-// Types
+// --- Type Definitions (no changes needed) ---
 interface AdminUser {
   id: number;
   username: string;
@@ -13,7 +13,6 @@ interface AdminUser {
   is_admin: boolean;
   createdAt: string;
 }
-
 interface AdminListing {
   id: number;
   title: string;
@@ -22,7 +21,6 @@ interface AdminListing {
   User: { username: string };
   createdAt: string;
 }
-
 interface AdminOrder {
   id: number;
   status: string;
@@ -41,6 +39,7 @@ export default function AdminPanel() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // --- Data Fetching and Handlers (your existing logic is perfect) ---
   useEffect(() => {
     const fetchAdminData = async () => {
       const token = localStorage.getItem("token");
@@ -111,16 +110,22 @@ export default function AdminPanel() {
     }
   };
 
+  // --- Loading State ---
   if (isLoading) {
-    return <div className="min-h-screen flex justify-center items-center text-lg">Loading Admin Panel...</div>;
+    return (
+      <div className="min-h-screen bg-gray-100 flex justify-center items-center">
+        <p className="text-lg font-semibold text-gray-700">Loading Admin Panel...</p>
+      </div>
+    );
   }
 
+  // --- Main Render ---
   return (
-    <div className="min-h-screen bg-light">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-100">
+      {/* Consistent Header */}
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-dark">Admin Panel</h1>
+        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <h1 className="text-xl font-bold text-gray-800">Admin Dashboard</h1>
           <div className="flex gap-4 items-center">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -137,131 +142,121 @@ export default function AdminPanel() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Tabs */}
-        <div className="flex gap-4 mb-6">
-          <button
-            onClick={() => setActiveTab("users")}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium ${
-              activeTab === "users" ? "bg-primary text-white" : "bg-white text-gray-600 border border-gray-200"
-            }`}
-          >
-            <User className="w-4 h-4" /> Users
-          </button>
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium ${
-              activeTab === "orders" ? "bg-primary text-white" : "bg-white text-gray-600 border border-gray-200"
-            }`}
-          >
-            <Package className="w-4 h-4" /> Orders
-          </button>
-          <button
-            onClick={() => setActiveTab("listings")}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium ${
-              activeTab === "listings" ? "bg-primary text-white" : "bg-white text-gray-600 border border-gray-200"
-            }`}
-          >
-            <ShoppingBag className="w-4 h-4" /> Listings
-          </button>
+      <main className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Section */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100 rounded-full"><User className="w-6 h-6 text-blue-600" /></div>
+              <div>
+                <p className="text-3xl font-bold text-gray-900">{users.length}</p>
+                <p className="text-sm font-medium text-gray-500">Total Users</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+             <div className="flex items-center gap-4">
+              <div className="p-3 bg-green-100 rounded-full"><ShoppingBag className="w-6 h-6 text-green-600" /></div>
+              <div>
+                <p className="text-3xl font-bold text-gray-900">{listings.length}</p>
+                <p className="text-sm font-medium text-gray-500">Total Listings</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+             <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-100 rounded-full"><Package className="w-6 h-6 text-purple-600" /></div>
+              <div>
+                <p className="text-3xl font-bold text-gray-900">{orders.length}</p>
+                <p className="text-sm font-medium text-gray-500">Total Swaps</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        {/* Main Content Area */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            {/* Tab Navigation */}
+            <nav className="flex border-b border-gray-200 mb-6">
+                <button onClick={() => setActiveTab("listings")} className={`px-4 py-3 font-medium text-sm ${activeTab === 'listings' ? 'border-b-2 border-green-600 text-green-600' : 'text-gray-500 hover:text-gray-700'}`}>Manage Listings</button>
+                <button onClick={() => setActiveTab("users")} className={`px-4 py-3 font-medium text-sm ${activeTab === 'users' ? 'border-b-2 border-green-600 text-green-600' : 'text-gray-500 hover:text-gray-700'}`}>Manage Users</button>
+                <button onClick={() => setActiveTab("orders")} className={`px-4 py-3 font-medium text-sm ${activeTab === 'orders' ? 'border-b-2 border-green-600 text-green-600' : 'text-gray-500 hover:text-gray-700'}`}>Manage Swaps</button>
+            </nav>
+
+            {/* Tab Content */}
+            <div>
+              {activeTab === "listings" && (
+                <div>
+                  <div className="grid grid-cols-5 gap-4 px-4 py-2 font-semibold text-xs text-gray-500 uppercase">
+                    <span>Title</span><span>User</span><span>Category</span><span>Status</span><span className="text-right">Actions</span>
+                  </div>
+                  {listings.length > 0 ? listings.map(listing => (
+                    <div key={listing.id} className="grid grid-cols-5 gap-4 px-4 py-3 border-t border-gray-200 items-center text-sm">
+                      <span className="font-medium text-gray-800">{listing.title}</span>
+                      <span className="text-gray-600">{listing.User.username}</span>
+                      <span className="text-gray-600">{listing.category}</span>
+                      <span>
+                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                          listing.status === "Available" ? "bg-green-100 text-green-800"
+                          : listing.status === "Pending" ? "bg-yellow-100 text-yellow-800"
+                          : "bg-gray-200 text-gray-700"
+                        }`}>{listing.status}</span>
+                      </span>
+                      <div className="flex gap-2 justify-end">
+                        {listing.status === 'Pending' && (
+                          <>
+                            <button onClick={() => handleListingStatusChange(listing.id, 'Available')} className="p-2 text-green-600 hover:bg-green-50 rounded-md"><CheckCircle className="w-5 h-5"/></button>
+                            <button onClick={() => handleListingStatusChange(listing.id, 'Rejected')} className="p-2 text-red-600 hover:bg-red-50 rounded-md"><XCircle className="w-5 h-5"/></button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )) : <p className="text-center text-gray-500 py-8">No listings found.</p>}
+                </div>
+              )}
+              {activeTab === "users" && (
+                <div>
+                  <div className="grid grid-cols-3 gap-4 px-4 py-2 font-semibold text-xs text-gray-500 uppercase">
+                    <span>Username</span><span>Email</span><span className="text-right">Role</span>
+                  </div>
+                  {users.length > 0 ? users.map(user => (
+                    <div key={user.id} className="grid grid-cols-3 gap-4 px-4 py-3 border-t border-gray-200 items-center text-sm">
+                      <span className="font-medium text-gray-800">{user.username}</span>
+                      <span className="text-gray-600">{user.email}</span>
+                      <span className="text-right">
+                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                          user.is_admin ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"
+                        }`}>{user.is_admin ? "Admin" : "User"}</span>
+                      </span>
+                    </div>
+                  )) : <p className="text-center text-gray-500 py-8">No users found.</p>}
+                </div>
+              )}
+              {activeTab === "orders" && (
+                <div>
+                  <div className="grid grid-cols-4 gap-4 px-4 py-2 font-semibold text-xs text-gray-500 uppercase">
+                    <span>Item</span><span>From</span><span>To</span><span className="text-right">Status</span>
+                  </div>
+                  {orders.length > 0 ? orders.map(order => (
+                    <div key={order.id} className="grid grid-cols-4 gap-4 px-4 py-3 border-t border-gray-200 items-center text-sm">
+                      <span className="font-medium text-gray-800">{order.RequestedItem.title}</span>
+                      <span className="text-gray-600">{order.Requester.username}</span>
+                      <span className="text-gray-600">{order.Responder.username}</span>
+                      <span className="text-right">
+                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                          order.status === "accepted"
+                            ? "bg-green-100 text-green-800"
+                            : order.status === "rejected"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}>{order.status}</span>
+                      </span>
+                    </div>
+                  )) : <p className="text-center text-gray-500 py-8">No swaps found.</p>}
+                </div>
+              )}
+            </div>
         </div>
-
-        {/* Users */}
-        {activeTab === "users" && (
-          <div className="bg-white rounded-lg overflow-hidden border">
-            <div className="px-6 py-4 border-b font-semibold">Users ({users.length})</div>
-            {users.map(user => (
-              <div key={user.id} className="px-6 py-4 border-t flex justify-between text-sm">
-                <div>
-                  <div className="font-medium">{user.username}</div>
-                  <div className="text-gray-500">{user.email}</div>
-                </div>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    user.is_admin ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  {user.is_admin ? "Admin" : "User"}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Listings */}
-        {activeTab === "listings" && (
-          <div className="bg-white rounded-lg overflow-hidden border">
-            <div className="px-6 py-4 border-b font-semibold">Listings ({listings.length})</div>
-            {listings.map(listing => (
-              <div key={listing.id} className="px-6 py-4 border-t grid grid-cols-5 gap-4 text-sm items-center">
-                <div>
-                  <div className="font-medium">{listing.title}</div>
-                  <div className="text-gray-500">by {listing.User.username}</div>
-                </div>
-                <div>{listing.category || "Uncategorized"}</div>
-                <div>{new Date(listing.createdAt).toLocaleDateString()}</div>
-                <div>
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full ${
-                      listing.status === "Available"
-                        ? "bg-green-100 text-green-800"
-                        : listing.status === "Pending"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    {listing.status}
-                  </span>
-                </div>
-                <div className="flex gap-2 justify-end">
-                  {listing.status === "Pending" && (
-                    <>
-                      <button
-                        onClick={() => handleListingStatusChange(listing.id, "Available")}
-                        className="bg-green-500 text-white text-xs px-3 py-1 rounded-md hover:bg-green-600"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleListingStatusChange(listing.id, "Rejected")}
-                        className="bg-red-500 text-white text-xs px-3 py-1 rounded-md hover:bg-red-600"
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Orders */}
-        {activeTab === "orders" && (
-          <div className="bg-white rounded-lg overflow-hidden border">
-            <div className="px-6 py-4 border-b font-semibold">Orders ({orders.length})</div>
-            {orders.map(order => (
-              <div key={order.id} className="px-6 py-4 border-t grid grid-cols-4 gap-4 text-sm">
-                <div>{order.RequestedItem.title}</div>
-                <div>From: {order.Requester.username}</div>
-                <div>To: {order.Responder.username}</div>
-                <div className="text-right">
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full ${
-                      order.status === "accepted"
-                        ? "bg-green-100 text-green-800"
-                        : order.status === "rejected"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {order.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </main>
     </div>
   );
