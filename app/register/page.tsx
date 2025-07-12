@@ -14,11 +14,35 @@ export default function RegisterPage() {
     password: "",
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Handle registration logic here
-    console.log("Registration attempt:", formData)
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  try {
+const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    });
+
+    // Check if the response is actually JSON before parsing
+    const contentType = response.headers.get("content-type");
+    if (response.ok && contentType && contentType.indexOf("application/json") !== -1) {
+      const data = await response.json();
+      console.log("✅ Registration successful:", data);
+      window.location.href = '/login';
+    } else {
+      // If the response is not OK or not JSON, get the text
+      const errorText = await response.text();
+      console.error("❌ Registration failed. Server responded with:", errorText);
+      alert(`Registration failed. The server sent: ${errorText.substring(0, 100)}...`); // Show a snippet of the error
+    }
+  } catch (error) {
+    console.error("⚠️ A network error occurred:", error);
+    alert("Something went wrong. Could not connect to the server. Is it running?");
   }
+};
+
 
   return (
     <div className="min-h-screen bg-dark flex items-center justify-center p-4">
